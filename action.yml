@@ -1,0 +1,31 @@
+# action.yml
+
+name: minio-upload
+description: "Action that lets you upload objects from a MinIO server"
+inputs:
+  url:
+    description: "URL of the MinIO server"
+    required: true
+  access-key:
+    description: "Access Key for the MinIO server"
+    required: true
+  secret-key:
+    description: "Secret Key for the MinIO server"
+    required: true
+  local-path:
+    description: 'Path of the local object'
+    required: true
+    default: './'
+  remote-path:
+    description: 'Path to remote object'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.url }}
+    - ${{ inputs.access-key }}
+    - ${{ inputs.secret-key }}
+    - ${{ inputs.local-path }}
+    - ${{ inputs.remote-path }}
