@@ -41,4 +41,4 @@ mc alias set s3 $url $access_key $secret_key
 ok_or_die "Could not set mc alias"
 
 mc cp -r $local_path s3/$remote_path
-ok_or_die "Could not fetch object"
+ok_or_die "Could not upload object"
