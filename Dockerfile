@@ -1,4 +1,4 @@
-FROM minio/mc
+FROM registry.nubificus.co.uk/minio/mc
 
 COPY entrypoint.sh /entrypoint.sh
 
