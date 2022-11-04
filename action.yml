@@ -19,6 +19,9 @@ inputs:
   remote-path:
     description: 'Path to remote object'
     required: true
+  policy:
+    description: 'Policy'
+    required: false
 
 runs:
   using: 'docker'
@@ -29,3 +32,4 @@ runs:
     - ${{ inputs.secret-key }}
     - ${{ inputs.local-path }}
     - ${{ inputs.remote-path }}
+    - ${{ inputs.policy }}
