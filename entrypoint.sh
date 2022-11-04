@@ -25,7 +25,7 @@ ok_or_die() {
 	fi
 }
 
-if [[ $# -ne 5 ]] ; then
+if [[ $# -lt 5 ]] ; then
 	die "Usage: $0 url access_key secret_key local_path remote_path"
 fi
 
@@ -35,10 +35,20 @@ secret_key=$3
 local_path=$4
 remote_path=$5
 
-info "Will fetch $remote_path to $local_path"
+info "Will upload $local_path to $remote_path"
 
 mc alias set s3 $url $access_key $secret_key
 ok_or_die "Could not set mc alias"
 
 mc cp -r $local_path s3/$remote_path
 ok_or_die "Could not upload object"
+
+if [[ $# -eq 6 ]] ; then
+	if [[ $6 -eq 1 ]] ; then
+		info "Will make $remote_path public"
+		mc policy -r set download s3/$remote_path
+	else
+		info "Will make $remote_path private"
+		mc policy -r set none s3/$remote_path || true
+	fi
+fi
