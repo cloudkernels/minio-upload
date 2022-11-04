@@ -46,9 +46,9 @@ ok_or_die "Could not upload object"
 if [[ $# -eq 6 ]] ; then
 	if [[ $6 -eq 1 ]] ; then
 		info "Will make $remote_path public"
-		mc policy -r set download s3/$remote_path
+		mc anonymous -r set download s3/$remote_path
 	else
 		info "Will make $remote_path private"
-		mc policy -r set none s3/$remote_path || true
+		mc anonymous -r set private s3/$remote_path || true
 	fi
 fi
