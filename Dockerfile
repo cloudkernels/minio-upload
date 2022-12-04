@@ -1,4 +1,4 @@
-FROM minio/mc
+FROM cloudkernels/mc
 
 COPY entrypoint.sh /entrypoint.sh
 
