@@ -40,7 +40,7 @@ info "Will upload $local_path to $remote_path"
 mc alias set s3 $url $access_key $secret_key
 ok_or_die "Could not set mc alias"
 
-mc cp -r $local_path s3/$remote_path
+for p in "$(ls -d $local_path)"; do mc cp -r "$p" s3/"$remote_path"; done
 ok_or_die "Could not upload object"
 
 if [[ $# -eq 6 ]] ; then
