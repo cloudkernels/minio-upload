@@ -21,7 +21,7 @@ die() {
 
 ok_or_die() {
 	if [ $? -ne 0 ]; then
-		die $1
+		die "$1"
 	fi
 }
 
@@ -37,18 +37,22 @@ remote_path=$5
 
 info "Will upload $local_path to $remote_path"
 
-mc alias set s3 $url $access_key $secret_key
+mc alias set s3 "$url" "$access_key" "$secret_key"
 ok_or_die "Could not set mc alias"
 
-mc cp -r $local_path s3/$remote_path
+IFS=$'\n'
+for p in $(eval ls -d -1 "$local_path"); do
+	mc cp -r "$p" s3/"$remote_path";
+done
+unset IFS
 ok_or_die "Could not upload object"
 
 if [[ $# -eq 6 ]] ; then
 	if [[ $6 -eq 1 ]] ; then
 		info "Will make $remote_path public"
-		mc anonymous -r set download s3/$remote_path
+		mc anonymous -r set download s3/"$remote_path"
 	else
 		info "Will make $remote_path private"
-		mc anonymous -r set private s3/$remote_path || true
+		mc anonymous -r set private s3/"$remote_path" || true
 	fi
 fi
