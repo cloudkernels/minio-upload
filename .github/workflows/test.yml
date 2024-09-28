@@ -1,0 +1,43 @@
+name: Test action
+
+on: push
+
+jobs:
+  upload:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Generate test files
+        run: |
+          mkdir -p files
+          echo "Minio Test 1" > files/test1.txt
+          echo "Minio Test 2" > files/test2.txt
+
+      - name: Test single file upload
+        uses: ./
+        with:
+          url: https://s3.nubificus.com
+          access-key: ${{ secrets.AWS_ACCESS_KEY }}
+          secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          local-path: "./files/test1.txt"
+          remote-path: "github/minio/"
+
+      - name: Test wildcard with extension upload
+        uses: ./
+        with:
+          url: https://s3.nubificus.com
+          access-key: ${{ secrets.AWS_ACCESS_KEY }}
+          secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          local-path: "./files/*.txt"
+          remote-path: "github/minio/"
+
+      - name: Test wildcard upload
+        uses: ./
+        with:
+          url: https://s3.nubificus.com
+          access-key: ${{ secrets.AWS_ACCESS_KEY }}
+          secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          local-path: "./files/*"
+          remote-path: "github/minio/"

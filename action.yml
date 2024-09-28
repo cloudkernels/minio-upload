@@ -24,13 +24,51 @@ inputs:
     required: false
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  entrypoint: '/entrypoint.sh'
-  args:
-    - ${{ inputs.url }}
-    - ${{ inputs.access-key }}
-    - ${{ inputs.secret-key }}
-    - ${{ inputs.local-path }}
-    - ${{ inputs.remote-path }}
-    - ${{ inputs.policy }}
+  using: composite
+  steps:
+    - name: Setup mc
+      working-directory: /usr/local/bin
+      run: |
+        [ -n "$(which mc)" ] && exit 0
+        arch=$(dpkg --print-architecture | sed 's/armhf/arm/g')
+        sudo wget --progres=dot:binary \
+          "https://dl.min.io/client/mc/release/linux-${arch}/mc"
+        sudo chmod +x mc
+      shell: bash
+
+    - name: Setup s3 alias
+      run: |
+        mc alias set s3 "${{ inputs.url }}" \
+          "${{ inputs.access-key }}" "${{ inputs.secret-key }}"
+      shell: bash
+
+    - name: Upload objects
+      run: |
+        echo "Will upload ${{ inputs.local-path }} to ${{ inputs.remote-path }}"
+        local_path=${{ inputs.local-path }}
+        if [ "${local_path#*'*'}" != "$local_path" ]; then
+          # Handle local_files with wildcards
+          local_dir=$(dirname "$local_path")
+          local_files=$(basename "$local_path")
+          IFS=$'\n'
+          for p in $(find "$local_dir" -maxdepth 1 -name "$local_files" | \
+            sort -u); do
+              [ "$p" = "$local_dir" ] && continue
+              mc cp -r "$p" "s3/${{ inputs.remote-path }}"
+          done
+          unset IFS
+        else
+          mc cp -r "$local_path" "s3/${{ inputs.remote-path }}"
+        fi
+      shell: bash
+
+    - name: Set policy
+      run: |
+        if [ "${{ inputs.policy }}" = 1 ] ; then
+          echo "Will make ${{ inputs.remote-path }} public"
+          mc anonymous -r set download "s3/${{ inputs.remote-path }}"
+        else
+          echo "Will make ${{ inputs.remote-path }} private"
+          mc anonymous -r set private "s3/${{ inputs.remote-path }}" || true
+        fi
+      shell: bash
