@@ -26,10 +26,40 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Check if mc is installed
+      id: check-mc
+      run: |
+        if [[ -n "$(which mc)" ]]; then
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash
+
+    - name: Download latest mc SHA256
+      id: mc-sha
+      if: ${{ steps.check-mc.outputs.exists == 'false' }}
+      run: |
+        sha=$(wget -qO- \
+          https://dl.min.io/client/mc/release/linux-amd64/mc.sha256sum \
+          | awk '{print $1}')
+        echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Cache mc binary
+      id: cache-mc
+      if: ${{ steps.check-mc.outputs.exists == 'false' }}
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/mc
+        key: mc-${{ steps.mc-sha.outputs.sha256 }}
+
     - name: Setup mc
       working-directory: /usr/local/bin
+      if: >-
+        ${{ steps.check-mc.outputs.exists == 'false'
+          && steps.cache-mc.outputs.cache-hit != 'true' }}
       run: |
-        [ -n "$(which mc)" ] && exit 0
         arch=$(dpkg --print-architecture | sed 's/armhf/arm/g')
         sudo wget --progres=dot:binary \
           "https://dl.min.io/client/mc/release/linux-${arch}/mc"
