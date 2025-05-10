@@ -22,7 +22,7 @@ jobs:
           access-key: ${{ secrets.AWS_ACCESS_KEY }}
           secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           local-path: "./files/test1.txt"
-          remote-path: "github/minio/"
+          remote-path: "nbfc-assets/github/minio/"
 
       - name: Test wildcard with extension upload
         uses: ./
@@ -31,7 +31,7 @@ jobs:
           access-key: ${{ secrets.AWS_ACCESS_KEY }}
           secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           local-path: "./files/*.txt"
-          remote-path: "github/minio/"
+          remote-path: "nbfc-assets/github/minio/"
 
       - name: Test wildcard upload
         uses: ./
@@ -40,4 +40,4 @@ jobs:
           access-key: ${{ secrets.AWS_ACCESS_KEY }}
           secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           local-path: "./files/*"
-          remote-path: "github/minio/"
+          remote-path: "nbfc-assets/github/minio/"
