@@ -38,28 +38,28 @@ runs:
 
     - name: Download latest mc SHA256
       id: mc-sha
-      if: ${{ steps.check-mc.outputs.exists == 'false' }}
+      if: steps.check-mc.outputs.exists == 'false'
       run: |
         arch=$(dpkg --print-architecture | sed 's/armhf/arm/g')
         sha=$(wget -qO- \
-          https://dl.min.io/client/mc/release/linux-"${arch}"/mc.sha256sum \
+          "https://dl.min.io/client/mc/release/linux-${arch}/mc.sha256sum" \
           | awk '{print $1}')
         echo "sha256=$sha" >> "$GITHUB_OUTPUT"
       shell: bash
 
     - name: Cache mc binary
       id: cache-mc
-      if: ${{ steps.check-mc.outputs.exists == 'false' }}
+      if: steps.check-mc.outputs.exists == 'false'
       uses: actions/cache@v5
       with:
         path: /usr/local/bin/mc
-        key: mc-${{ steps.mc-sha.outputs.sha256 }}
+        key: "mc-${{ steps.mc-sha.outputs.sha256 }}"
 
     - name: Setup mc
       working-directory: /usr/local/bin
       if: >-
-        ${{ steps.check-mc.outputs.exists == 'false'
-          && steps.cache-mc.outputs.cache-hit != 'true' }}
+        steps.check-mc.outputs.exists == 'false' &&
+        steps.cache-mc.outputs.cache-hit != 'true'
       run: |
         arch=$(dpkg --print-architecture | sed 's/armhf/arm/g')
         sudo wget --progres=dot:binary \
@@ -68,38 +68,45 @@ runs:
       shell: bash
 
     - name: Setup s3 alias
-      run: |
-        mc alias set s3 "${{ inputs.url }}" \
-          "${{ inputs.access-key }}" "${{ inputs.secret-key }}"
+      env:
+        URL: ${{ inputs.url }}
+        ACCESS_KEY: ${{ inputs.access-key }}
+        SECRET_KEY: ${{ inputs.secret-key }}
+      run: mc alias set s3 "$URL" "$ACCESS_KEY" "$SECRET_KEY"
       shell: bash
 
     - name: Upload objects
+      env:
+        LOCAL_PATH: ${{ inputs.local-path }}
+        REMOTE_PATH: ${{ inputs.remote-path }}
       run: |
-        echo "Will upload ${{ inputs.local-path }} to ${{ inputs.remote-path }}"
-        local_path=${{ inputs.local-path }}
-        if [ "${local_path#*'*'}" != "$local_path" ]; then
+        echo "Will upload ${LOCAL_PATH} to ${REMOTE_PATH}"
+        if [[ "${LOCAL_PATH#*'*'}" != "$LOCAL_PATH" ]]; then
           # Handle local_files with wildcards
-          local_dir=$(dirname "$local_path")
-          local_files=$(basename "$local_path")
+          local_dir=$(dirname "$LOCAL_PATH")
+          local_files=$(basename "$LOCAL_PATH")
           IFS=$'\n'
-          for p in $(find "$local_dir" -maxdepth 1 -name "$local_files" | \
+          for p in $(find "$local_dir" -maxdepth 1 -name "$local_files" |
             sort -u); do
-              [ "$p" = "$local_dir" ] && continue
-              mc cp -r "$p" "s3/${{ inputs.remote-path }}"
+              [[ "$p" != "$local_dir" ]] || continue
+              mc cp -r "$p" "s3/${REMOTE_PATH}"
           done
           unset IFS
         else
-          mc cp -r "$local_path" "s3/${{ inputs.remote-path }}"
+          mc cp -r "$LOCAL_PATH" "s3/${REMOTE_PATH}"
         fi
       shell: bash
 
     - name: Set policy
+      env:
+        POLICY: ${{ inputs.policy }}
+        REMOTE_PATH: ${{ inputs.remote-path }}
       run: |
-        if [ "${{ inputs.policy }}" = 1 ] ; then
-          echo "Will make ${{ inputs.remote-path }} public"
-          mc anonymous -r set download "s3/${{ inputs.remote-path }}"
+        if [[ "$POLICY" == 1 ]]; then
+          echo "Will make ${REMOTE_PATH} public"
+          mc anonymous -r set download "s3/${REMOTE_PATH}"
         else
-          echo "Will make ${{ inputs.remote-path }} private"
-          mc anonymous -r set private "s3/${{ inputs.remote-path }}" || true
+          echo "Will make ${REMOTE_PATH} private"
+          mc anonymous -r set private "s3/${REMOTE_PATH}" || true
         fi
       shell: bash
